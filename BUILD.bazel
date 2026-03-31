@@ -1,0 +1,45 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
+
+# shared library: foo
+
+cc_library(
+    name = "foo_impl",
+    srcs = ["src/foo.cpp"],
+    hdrs = ["src/foo.hpp"],
+    includes = ["src"],
+)
+
+cc_shared_library(
+    name = "foo",
+    exports_filter = [":foo_impl"],
+    deps = [":foo_impl"],
+)
+
+# shared library: bar (depends on foo)
+
+cc_library(
+    name = "bar_impl",
+    srcs = ["src/bar.cpp"],
+    hdrs = ["src/bar.hpp"],
+    includes = ["src"],
+    deps = [":foo_impl"],
+)
+
+cc_shared_library(
+    name = "bar",
+    dynamic_deps = [":foo"],
+    exports_filter = [":bar_impl"],
+    deps = [":bar_impl"],
+)
+
+# executable: baz (depends on bar, but does not get foo)
+# undefined reference to 'Foo::Foo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+
+cc_binary(
+    name = "baz",
+    srcs = ["src/baz.cpp"],
+    dynamic_deps = [":bar"],  # <---- WHY DOES THIS NOT TRANSITIVELY PULL IN //:foo
+    deps = [":bar_impl"],
+)
