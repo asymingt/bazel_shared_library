@@ -1,6 +1,7 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
+load("//:defs.bzl", "collect_transitive_dynamic_deps")
 
 # shared library: foo
 
@@ -34,12 +35,14 @@ cc_shared_library(
     deps = [":bar_impl"],
 )
 
-# executable: baz (depends on bar, but does not get foo)
-# undefined reference to 'Foo::Foo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+collect_transitive_dynamic_deps(
+    name = "transitive_deps",
+    dynamic_deps = [":bar"],
+)
 
 cc_binary(
     name = "baz",
     srcs = ["src/baz.cpp"],
-    dynamic_deps = [":bar"],  # <---- WHY DOES THIS NOT TRANSITIVELY PULL IN //:foo
+    dynamic_deps = [":transitive_deps"],
     deps = [":bar_impl"],
 )
